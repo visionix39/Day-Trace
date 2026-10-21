@@ -1,0 +1,156 @@
+{
+  "about": "Hand-written answer key for notes.json: what a perfect extractor would pull out, and how things should connect. Statuses are as of anchor_date, after reading every note. Used to preview the UI now and to score the real extractor later.",
+  "anchor_date": "2026-10-22",
+  "people": [
+    { "id": "sarah", "name": "Sarah Chen", "kind": "person", "aliases": ["Sarah", "Sarah C."], "role": "Client - Fernway Coffee" },
+    { "id": "marco", "name": "Marco", "kind": "person", "aliases": [], "role": "Sarah's co-founder" },
+    { "id": "priya", "name": "Priya Raman", "kind": "person", "aliases": ["Priya"], "role": "Recruiter - Lumen Labs" },
+    { "id": "leila", "name": "Leila", "kind": "person", "aliases": [], "role": "Sister" },
+    { "id": "mum", "name": "Mum", "kind": "person", "aliases": [], "role": "Mother" },
+    { "id": "dad", "name": "Dad", "kind": "person", "aliases": [], "role": "Father" },
+    { "id": "haddad", "name": "Dr. Haddad", "kind": "person", "aliases": [], "role": "Dentist" },
+    { "id": "duarte", "name": "Mr. Duarte", "kind": "person", "aliases": ["Duarte"], "role": "Landlord" },
+    { "id": "fernway", "name": "Fernway Coffee", "kind": "org", "aliases": ["Fernway"], "role": "Client company" },
+    { "id": "lumen", "name": "Lumen Labs", "kind": "org", "aliases": ["Lumen"], "role": "Job application" },
+    { "id": "brightside", "name": "Brightside Gym", "kind": "org", "aliases": ["gym"], "role": "Subscription" },
+    { "id": "streamly", "name": "Streamly", "kind": "org", "aliases": [], "role": "Subscription (trial)" },
+    { "id": "citypower", "name": "CityPower", "kind": "org", "aliases": [], "role": "Electricity provider" }
+  ],
+  "threads": [
+    { "id": "fernway", "title": "Fernway Coffee rebrand", "hue": "thread" },
+    { "id": "lumen", "title": "Lumen Labs application", "hue": "sky" },
+    { "id": "birthday", "title": "Mum's birthday", "hue": "rose" },
+    { "id": "home", "title": "The flat", "hue": "sage" },
+    { "id": "health", "title": "Health", "hue": "plum" },
+    { "id": "money", "title": "Bills & subscriptions", "hue": "honey" },
+    { "id": "errands", "title": "Errands & admin", "hue": "clay" }
+  ],
+  "items": [
+    {
+      "id": "i01", "kind": "todo", "thread": "money",
+      "title": "Email Brightside Gym to cancel the membership",
+      "people": ["brightside"], "due": "2026-10-31", "due_text": "before Nov 1", "status": "open",
+      "mentions": [{ "note": "n01", "role": "created" }, { "note": "n20", "role": "updated" }]
+    },
+    {
+      "id": "i02", "kind": "todo", "thread": "health",
+      "title": "Book a dentist appointment with Dr. Haddad",
+      "people": ["haddad", "dad"], "due": "2026-10-31", "due_text": "end of the month", "status": "done",
+      "mentions": [{ "note": "n02", "role": "created" }, { "note": "n11", "role": "resolved" }]
+    },
+    {
+      "id": "i03", "kind": "event", "thread": "health",
+      "title": "Dentist with Dr. Haddad",
+      "people": ["haddad"], "due": "2026-11-03", "time": "09:30", "due_text": "Tues Nov 3 at 9:30am", "status": "open",
+      "mentions": [{ "note": "n11", "role": "created" }]
+    },
+    {
+      "id": "i04", "kind": "waiting", "thread": "lumen",
+      "title": "Hear back from Lumen Labs about the Senior Product Designer role",
+      "people": ["priya", "lumen"], "due": "2026-10-17", "due_text": "within two weeks", "status": "open",
+      "mentions": [{ "note": "n03", "role": "created" }, { "note": "n14", "role": "updated" }, { "note": "n16", "role": "updated" }]
+    },
+    {
+      "id": "i05", "kind": "todo", "thread": "lumen",
+      "title": "Follow up with Priya if there's no reply",
+      "people": ["priya"], "due": "2026-10-19", "due_text": "by the 17th, then Monday", "status": "done",
+      "mentions": [{ "note": "n03", "role": "created" }, { "note": "n14", "role": "updated" }, { "note": "n16", "role": "resolved" }]
+    },
+    {
+      "id": "i06", "kind": "todo", "thread": "fernway",
+      "title": "Send Sarah the proposal with 3 pricing tiers",
+      "people": ["sarah", "fernway"], "due": "2026-10-09", "due_text": "by Friday", "status": "done",
+      "mentions": [{ "note": "n04", "role": "created" }, { "note": "n07", "role": "resolved" }]
+    },
+    {
+      "id": "i07", "kind": "waiting", "thread": "fernway",
+      "title": "Sign-off on the Fernway proposal",
+      "people": ["sarah", "marco"], "due": "2026-10-19", "due_text": "Monday", "status": "open",
+      "mentions": [{ "note": "n07", "role": "created" }, { "note": "n12", "role": "updated" }, { "note": "n17", "role": "updated" }, { "note": "n19", "role": "updated" }]
+    },
+    {
+      "id": "i08", "kind": "todo", "thread": "money",
+      "title": "Pay the CityPower bill ($86.40)",
+      "people": ["citypower"], "due": "2026-10-21", "due_text": "Due by 21 Oct 2026", "status": "done",
+      "mentions": [{ "note": "n05", "role": "created" }, { "note": "n20", "role": "resolved" }]
+    },
+    {
+      "id": "i09", "kind": "todo", "thread": "birthday",
+      "title": "Get the cake for Mum's birthday dinner",
+      "people": ["leila", "mum"], "due": "2026-10-24", "due_text": "Sat the 24th", "status": "open",
+      "mentions": [{ "note": "n08", "role": "created" }, { "note": "n22", "role": "updated" }]
+    },
+    {
+      "id": "i10", "kind": "event", "thread": "birthday",
+      "title": "Mum's birthday dinner at Olive & Thyme",
+      "people": ["mum", "leila"], "due": "2026-10-24", "time": "19:00", "due_text": "Sat the 24th, 7pm", "status": "open",
+      "mentions": [{ "note": "n08", "role": "created" }, { "note": "n22", "role": "updated" }]
+    },
+    {
+      "id": "i11", "kind": "waiting", "thread": "birthday",
+      "title": "Leila books the restaurant",
+      "people": ["leila"], "due": null, "due_text": null, "status": "done",
+      "mentions": [{ "note": "n08", "role": "created" }, { "note": "n22", "role": "resolved" }]
+    },
+    {
+      "id": "i12", "kind": "todo", "thread": "money",
+      "title": "Cancel or keep Streamly before the trial ends",
+      "people": ["streamly"], "due": "2026-10-26", "due_text": "trial ends on Oct 26", "status": "open",
+      "mentions": [{ "note": "n09", "role": "created" }, { "note": "n20", "role": "updated" }]
+    },
+    {
+      "id": "i13", "kind": "todo", "thread": "home",
+      "title": "Text Mr. Duarte that Friday works for the boiler",
+      "people": ["duarte"], "due": "2026-10-22", "due_text": "Thursday or Friday next week", "status": "open",
+      "mentions": [{ "note": "n10", "role": "created" }, { "note": "n21", "role": "updated" }]
+    },
+    {
+      "id": "i14", "kind": "event", "thread": "home",
+      "title": "Boiler repair visit",
+      "people": ["duarte"], "due": "2026-10-23", "due_text": "it has to be Friday", "status": "open",
+      "mentions": [{ "note": "n21", "role": "created" }]
+    },
+    {
+      "id": "i15", "kind": "todo", "thread": "fernway",
+      "title": "Send Sarah the moodboard link",
+      "people": ["sarah"], "due": "2026-10-21", "due_text": "tomorrow morning first thing", "status": "open",
+      "mentions": [{ "note": "n12", "role": "created" }, { "note": "n18", "role": "updated" }]
+    },
+    {
+      "id": "i16", "kind": "todo", "thread": "errands",
+      "title": "Start the passport renewal",
+      "people": [], "due": "2026-10-31", "due_text": "start this month", "status": "open",
+      "mentions": [{ "note": "n13", "role": "created" }]
+    },
+    {
+      "id": "i17", "kind": "todo", "thread": "errands",
+      "title": "Groceries: oat milk, eggs, lemons, the good bread",
+      "people": [], "due": null, "due_text": null, "status": "open",
+      "mentions": [{ "note": "n15", "role": "created" }]
+    },
+    {
+      "id": "i18", "kind": "event", "thread": "fernway",
+      "title": "Timeline call with Sarah and Marco",
+      "people": ["sarah", "marco"], "due": "2026-10-21", "due_text": "Wed", "status": "done",
+      "mentions": [{ "note": "n17", "role": "created" }, { "note": "n19", "role": "resolved" }]
+    },
+    {
+      "id": "i19", "kind": "todo", "thread": "fernway",
+      "title": "Send Sarah and Marco the revised timeline (start Nov 9)",
+      "people": ["sarah", "marco"], "due": "2026-10-23", "due_text": "by Friday", "status": "open",
+      "mentions": [{ "note": "n19", "role": "created" }]
+    }
+  ],
+  "links": [
+    { "from": "i07", "to": "i06", "relation": "depends_on", "why": "Sarah can only approve the proposal Mina sent on the 9th." },
+    { "from": "i07", "to": "i19", "relation": "depends_on", "why": "Marco won't sign until he sees the revised timeline." },
+    { "from": "i18", "to": "i07", "relation": "part_of", "why": "The call was about the approval." },
+    { "from": "i15", "to": "i07", "relation": "related", "why": "Sarah asked for the moodboard while waiting on Marco." },
+    { "from": "i05", "to": "i04", "relation": "follows_up", "why": "The nudge is for the unanswered application." },
+    { "from": "i03", "to": "i02", "relation": "follows_up", "why": "The appointment is what got booked." },
+    { "from": "i14", "to": "i13", "relation": "depends_on", "why": "The visit only happens once Duarte hears back." },
+    { "from": "i09", "to": "i10", "relation": "part_of", "why": "The cake is for the dinner." },
+    { "from": "i11", "to": "i10", "relation": "part_of", "why": "Leila's booking is for the dinner." }
+  ],
+  "notes_without_items": ["n06"]
+}

@@ -1,0 +1,147 @@
+{
+  "about": "Synthetic inbox for a made-up person, Mina Okafor (freelance product designer). Three weeks of raw captures exactly as she would paste them: notes, text pulled from screenshots, and messages. Every person, company and amount is invented.",
+  "owner": "Mina Okafor",
+  "anchor_date": "2026-10-22",
+  "notes": [
+    {
+      "id": "n01",
+      "captured_at": "2026-10-01T08:40:00",
+      "source": "note",
+      "text": "Gym membership auto-renews on the 1st of every month - I keep meaning to cancel before Nov 1. Need to email them, they don't let you cancel in the app."
+    },
+    {
+      "id": "n02",
+      "captured_at": "2026-10-02T14:05:00",
+      "source": "message",
+      "from": "Dad",
+      "text": "Did you book the dentist yet? Dr. Haddad's office said they have slots end of the month. Don't forget like last time 😄"
+    },
+    {
+      "id": "n03",
+      "captured_at": "2026-10-03T10:20:00",
+      "source": "note",
+      "text": "Applied to Lumen Labs - Senior Product Designer. Recruiter is Priya Raman. She said they'd get back within two weeks. If I hear nothing by the 17th, follow up."
+    },
+    {
+      "id": "n04",
+      "captured_at": "2026-10-06T09:15:00",
+      "source": "note",
+      "text": "Kickoff call with Sarah Chen (Fernway Coffee rebrand). She wants a proposal with 3 pricing tiers by Friday."
+    },
+    {
+      "id": "n05",
+      "captured_at": "2026-10-07T19:30:00",
+      "source": "screenshot",
+      "app": "Mail",
+      "text": "CITYPOWER   Account 44-1029\nStatement date  05 Oct 2026\nAmount due      $86.40\nDue by          21 Oct 2026\nPay online at citypower.example  |  Questions? 0800 555 0199"
+    },
+    {
+      "id": "n06",
+      "captured_at": "2026-10-08T22:10:00",
+      "source": "note",
+      "text": "random thought: the café on Pell St does a great flat white. also the new season of that baking show is out"
+    },
+    {
+      "id": "n07",
+      "captured_at": "2026-10-09T16:45:00",
+      "source": "note",
+      "text": "Sent the Fernway proposal to Sarah ✅ (v2, with the mid tier at $4.8k). Now it's on her - she needs sign-off from her co-founder Marco before we can start."
+    },
+    {
+      "id": "n08",
+      "captured_at": "2026-10-10T11:00:00",
+      "source": "message",
+      "from": "Leila",
+      "text": "Mum's birthday dinner is Sat the 24th!! Can you handle the cake? I'll book the restaurant 🎂"
+    },
+    {
+      "id": "n09",
+      "captured_at": "2026-10-12T09:05:00",
+      "source": "screenshot",
+      "app": "Mail",
+      "text": "Streamly\nYour free trial ends on Oct 26.\nAfter that you'll be billed $15.99/mo.\nManage subscription >"
+    },
+    {
+      "id": "n10",
+      "captured_at": "2026-10-13T13:30:00",
+      "source": "note",
+      "text": "Landlord (Mr. Duarte) says the boiler guy can come Thursday or Friday next week, I need to tell him which day works. Text him."
+    },
+    {
+      "id": "n11",
+      "captured_at": "2026-10-14T10:10:00",
+      "source": "note",
+      "text": "Booked dentist - Dr. Haddad, Tues Nov 3 at 9:30am. Dad will be pleased."
+    },
+    {
+      "id": "n12",
+      "captured_at": "2026-10-15T17:20:00",
+      "source": "message",
+      "from": "Sarah C.",
+      "text": "Hi! Loved the proposal. Marco's travelling until Monday, I'll get you a final yes then. Could you also send over the moodboard link in the meantime?"
+    },
+    {
+      "id": "n13",
+      "captured_at": "2026-10-16T08:50:00",
+      "source": "note",
+      "text": "Need to renew passport - expires in Feb, and I'm flying to Lisbon in March. Processing is ~10 weeks right now. Start this month."
+    },
+    {
+      "id": "n14",
+      "captured_at": "2026-10-17T18:00:00",
+      "source": "note",
+      "text": "Nothing from Lumen Labs yet. Two weeks today. Follow up Monday?"
+    },
+    {
+      "id": "n15",
+      "captured_at": "2026-10-18T12:30:00",
+      "source": "note",
+      "text": "groceries: oat milk, eggs, lemons, the good bread"
+    },
+    {
+      "id": "n16",
+      "captured_at": "2026-10-19T09:40:00",
+      "source": "note",
+      "text": "Emailed Priya at Lumen to check in on my application. Fingers crossed."
+    },
+    {
+      "id": "n17",
+      "captured_at": "2026-10-19T15:15:00",
+      "source": "message",
+      "from": "Sarah C.",
+      "text": "Marco's back - he wants to tweak the timeline before signing. Can we hop on a call Wed?"
+    },
+    {
+      "id": "n18",
+      "captured_at": "2026-10-20T20:05:00",
+      "source": "note",
+      "text": "moodboard link for Sarah - still haven't sent it 🙈 do it tomorrow morning first thing"
+    },
+    {
+      "id": "n19",
+      "captured_at": "2026-10-21T11:30:00",
+      "source": "note",
+      "text": "Call with Sarah + Marco went well. They want to push the start to Nov 9. I owe them a revised timeline by Friday."
+    },
+    {
+      "id": "n20",
+      "captured_at": "2026-10-21T19:45:00",
+      "source": "screenshot",
+      "app": "Bank",
+      "text": "Upcoming payments\nBrightside Gym     $49.00   01 Nov\nStreamly           $15.99   26 Oct\nCityPower          $86.40   21 Oct   PAID"
+    },
+    {
+      "id": "n21",
+      "captured_at": "2026-10-22T08:15:00",
+      "source": "note",
+      "text": "Duarte texted again about the boiler 😬 I never replied. Thursday's today, so it has to be Friday."
+    },
+    {
+      "id": "n22",
+      "captured_at": "2026-10-22T09:00:00",
+      "source": "message",
+      "from": "Leila",
+      "text": "Restaurant's booked, 7pm at Olive & Thyme. Cake still on you!"
+    }
+  ]
+}

@@ -1,0 +1,272 @@
+@import "tailwindcss";
+
+/**
+ * DayTrace's look: a well-loved paper notebook on a kitchen table.
+ *
+ * Cream paper, warm brown ink, and one red thread that ties related things
+ * together. Instead of glass, gradients and glow, the surfaces are things you
+ * would find on a desk - an index card, a ruled page, sticky notes held on
+ * with washi tape, little sewn-on buttons. In dark mode the same desk is lit
+ * by a lamp: the paper turns to walnut and the ink to cream.
+ *
+ * Colours are CSS variables on :root so dark mode is just a second set of
+ * values. Tailwind reads them through `@theme inline`, which is what makes
+ * classes like `bg-card` and `text-ink-2` exist.
+ */
+
+:root {
+  color-scheme: light;
+
+  --paper: #f5eddf;
+  --card: #fffaf1;
+  --card-2: #fbf3e4;
+  --ink: #3a2c24;
+  --ink-2: #6d5b4e;
+  --ink-3: #94826f;
+  --rule: #e6d8c3;
+  --rule-blue: #d6e1e7;
+  --margin: #e9a898;
+  --sticky: #f8e7a8;
+  --tape: rgb(233 168 152 / 0.55);
+  --shadow: rgb(84 56 30 / 0.12);
+  --grain-opacity: 0.32;
+
+  /* Each thread hue has an "ink" (lines, text) and a "wash" (soft fills). */
+  --thread-ink: #b8462f;
+  --thread-wash: #f6d9cf;
+  --sky-ink: #3f6f8f;
+  --sky-wash: #d9e7ef;
+  --rose-ink: #b04a6a;
+  --rose-wash: #f6d8e1;
+  --sage-ink: #557545;
+  --sage-wash: #dee8d3;
+  --plum-ink: #775784;
+  --plum-wash: #e8ddec;
+  --honey-ink: #9a6c12;
+  --honey-wash: #f6e6b8;
+  --clay-ink: #86664f;
+  --clay-wash: #ecdfd3;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+
+    --paper: #1e1814;
+    --card: #2a221c;
+    --card-2: #241d18;
+    --ink: #f3e8d8;
+    --ink-2: #cbb9a6;
+    --ink-3: #988675;
+    --rule: #3b3129;
+    --rule-blue: #2e383d;
+    --margin: #6d3b31;
+    --sticky: #4d4122;
+    --tape: rgb(224 122 95 / 0.35);
+    --shadow: rgb(0 0 0 / 0.38);
+    --grain-opacity: 0.12;
+
+    --thread-ink: #ef8a6f;
+    --thread-wash: #4a2a22;
+    --sky-ink: #93bbd6;
+    --sky-wash: #22323d;
+    --rose-ink: #e895ae;
+    --rose-wash: #45262f;
+    --sage-ink: #a7c491;
+    --sage-wash: #2b3524;
+    --plum-ink: #c7a7d3;
+    --plum-wash: #362a3b;
+    --honey-ink: #e5ba5e;
+    --honey-wash: #40341a;
+    --clay-ink: #d2b59e;
+    --clay-wash: #3a2f27;
+  }
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-card: var(--card);
+  --color-card-2: var(--card-2);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-rule: var(--rule);
+  --color-thread: var(--thread-ink);
+  --color-thread-wash: var(--thread-wash);
+
+  --font-sans: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
+  --font-hand: var(--font-caveat), "Bradley Hand", cursive;
+  --font-type: var(--font-courier), ui-monospace, monospace;
+}
+
+/* Hue scopes: put `hue-sage` on an element and everything inside can use
+   var(--h) / var(--hw) without knowing which thread it belongs to. */
+.hue-thread { --h: var(--thread-ink); --hw: var(--thread-wash); }
+.hue-sky    { --h: var(--sky-ink);    --hw: var(--sky-wash); }
+.hue-rose   { --h: var(--rose-ink);   --hw: var(--rose-wash); }
+.hue-sage   { --h: var(--sage-ink);   --hw: var(--sage-wash); }
+.hue-plum   { --h: var(--plum-ink);   --hw: var(--plum-wash); }
+.hue-honey  { --h: var(--honey-ink);  --hw: var(--honey-wash); }
+.hue-clay   { --h: var(--clay-ink);   --hw: var(--clay-wash); }
+
+body {
+  background-color: var(--paper);
+  color: var(--ink);
+  /* A faint dot grid, like a bullet-journal page. */
+  background-image: radial-gradient(var(--rule) 1px, transparent 1.2px);
+  background-size: 22px 22px;
+  background-position: -11px -11px;
+}
+
+/* Paper grain over everything, so flat colours feel like a surface. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+  opacity: var(--grain-opacity);
+  mix-blend-mode: multiply;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .45 0 0 0 0 .35 0 0 0 0 .25 0 0 0 .35 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+@media (prefers-color-scheme: dark) {
+  body::before { mix-blend-mode: screen; }
+}
+
+::selection { background: var(--thread-wash); color: var(--ink); }
+
+/* Fraunces has a "soft" axis that rounds its corners - turned all the way up
+   it reads friendly rather than formal. */
+.font-display {
+  font-variation-settings: "SOFT" 100, "WONK" 1;
+}
+
+/* ---------- Surfaces ---------- */
+
+/* A piece of paper sitting on the desk: slight lift, soft warm shadow. */
+.sheet {
+  background: var(--card);
+  border-radius: 6px;
+  box-shadow:
+    0 1px 0 var(--rule),
+    0 10px 24px -12px var(--shadow),
+    0 2px 6px -2px var(--shadow);
+}
+
+/* The notebook page: blue ruled lines and a red margin line. */
+.ruled {
+  background-color: var(--card);
+  background-image:
+    linear-gradient(to right, transparent 46px, var(--margin) 46px, var(--margin) 47.5px, transparent 47.5px),
+    repeating-linear-gradient(to bottom, transparent 0 31px, var(--rule-blue) 31px 32px);
+  background-position: 0 14px;
+}
+
+/* Washi tape holding a card down. Place inside a `relative` parent. */
+.tape {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  width: 84px;
+  height: 22px;
+  translate: -50% 0;
+  rotate: -3deg;
+  background:
+    repeating-linear-gradient(45deg, transparent 0 6px, rgb(255 255 255 / 0.22) 6px 12px),
+    var(--tape);
+  border-radius: 1px;
+  /* torn ends */
+  mask: linear-gradient(90deg, transparent 0, #000 3px, #000 calc(100% - 3px), transparent 100%);
+}
+
+.sticky-note {
+  background: var(--sticky);
+  box-shadow: 0 12px 18px -14px var(--shadow), 0 1px 2px var(--shadow);
+}
+
+/* A speech bubble for messages. */
+.bubble {
+  position: relative;
+  background: var(--card);
+  border: 1.5px solid var(--rule);
+  border-radius: 18px 18px 18px 4px;
+}
+
+/* A polaroid-ish frame for screenshot text. */
+.snapshot {
+  background: var(--card);
+  padding: 10px 10px 14px;
+  box-shadow: 0 10px 20px -14px var(--shadow), 0 1px 2px var(--shadow);
+}
+
+.snapshot-inner {
+  background: var(--card-2);
+  border: 1px dashed var(--rule);
+}
+
+/* ---------- Little details ---------- */
+
+/* A rubber-stamp look for people's names. */
+.stamp {
+  border: 1.5px solid currentColor;
+  border-radius: 999px;
+  padding: 0 0.55em;
+  line-height: 1.5;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  opacity: 0.9;
+}
+
+/* Running stitch, like a thread sewn through the page. */
+.stitch {
+  background-image: linear-gradient(to bottom, var(--h) 0 60%, transparent 60%);
+  background-size: 2px 10px;
+  background-repeat: repeat-y;
+}
+
+/* Done items get a hand-drawn-feeling wavy strike. */
+.struck {
+  text-decoration: line-through wavy color-mix(in srgb, var(--h, var(--thread-ink)) 55%, transparent);
+  text-decoration-thickness: 1px;
+  color: var(--ink-3);
+}
+
+.check-mark {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+  transition: stroke-dashoffset 280ms ease-out;
+}
+
+[data-done="true"] .check-mark { stroke-dashoffset: 0; }
+
+/* A tiny happy wobble when you tick something off. */
+@keyframes wiggle {
+  0%, 100% { rotate: 0deg; }
+  30% { rotate: -8deg; }
+  60% { rotate: 6deg; }
+}
+
+[data-done="true"] .check-circle { animation: wiggle 420ms ease-in-out; }
+
+/* Slight, deliberate tilts for things pinned to the desk. */
+.tilt-l { rotate: -1.2deg; }
+.tilt-r { rotate: 1deg; }
+.tilt-0 { rotate: 0.3deg; }
+
+@media (hover: hover) {
+  .lift { transition: rotate 200ms ease, translate 200ms ease; }
+  .lift:hover { rotate: 0deg; translate: 0 -2px; }
+}
+
+:focus-visible {
+  outline: 2px dashed var(--thread-ink);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
