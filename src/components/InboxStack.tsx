@@ -1,6 +1,6 @@
 import { capturedLabel } from "@/lib/dates";
-import { notes, today } from "@/lib/seed";
 import type { Note } from "@/lib/types";
+import type { DeskView } from "@/lib/view";
 
 const tilts = ["tilt-l", "tilt-r", "tilt-0"];
 
@@ -9,20 +9,21 @@ const tilts = ["tilt-l", "tilt-r", "tilt-0"];
  * object: notes are sticky notes, messages are speech bubbles, and text from
  * screenshots sits in a little photo frame in typewriter type.
  */
-export function InboxStack({ count = 5 }: { count?: number }) {
-  const recent = notes.slice(-count).reverse();
+export function InboxStack({ view, count = 5 }: { view: DeskView; count?: number }) {
+  const recent = view.notes.slice(-count).reverse();
   return (
     <section aria-labelledby="inbox-title">
       <div className="flex items-baseline justify-between">
         <h2 id="inbox-title" className="font-display text-[1.3rem] font-medium">
           Recently dropped in
         </h2>
-        <span className="font-hand text-[1.1rem] text-ink-3">{notes.length} in the jar</span>
+        <span className="font-hand text-[1.1rem] text-ink-3">{view.notes.length} in the jar</span>
       </div>
+      {!recent.length && <p className="font-hand mt-2 text-[1.2rem] text-ink-3">the jar is empty</p>}
       <ul className="mt-5 space-y-5">
         {recent.map((note, i) => (
           <li key={note.id} className={`lift ${tilts[i % tilts.length]}`}>
-            <Capture note={note} />
+            <Capture note={note} today={view.today} />
           </li>
         ))}
       </ul>
@@ -30,14 +31,14 @@ export function InboxStack({ count = 5 }: { count?: number }) {
   );
 }
 
-function Capture({ note }: { note: Note }) {
+function Capture({ note, today }: { note: Note; today: string }) {
   const when = capturedLabel(today, note.captured_at);
 
   if (note.source === "message") {
     return (
       <figure>
         <figcaption className="mb-1 pl-1 text-[0.75rem] font-semibold text-ink-3">
-          {note.from} · {when}
+          {note.from ?? "A message"} · {when}
         </figcaption>
         <blockquote className="bubble px-4 py-2.5 text-[0.95rem] leading-relaxed">{note.text}</blockquote>
       </figure>
@@ -51,7 +52,7 @@ function Capture({ note }: { note: Note }) {
           {note.text}
         </pre>
         <figcaption className="font-hand mt-1.5 text-center text-[1.05rem] leading-none text-ink-3">
-          from a {note.app} screenshot · {when}
+          from a {note.app ? `${note.app} ` : ""}screenshot · {when}
         </figcaption>
       </figure>
     );

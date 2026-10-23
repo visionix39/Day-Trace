@@ -251,6 +251,14 @@ body::before {
 
 [data-done="true"] .check-circle { animation: wiggle 420ms ease-in-out; }
 
+/* New cards slide in like a page being turned over. */
+@keyframes card-in {
+  from { opacity: 0; translate: 0 -6px; }
+  to { opacity: 1; translate: 0 0; }
+}
+
+.card-in { animation: card-in 260ms ease-out; }
+
 /* Slight, deliberate tilts for things pinned to the desk. */
 .tilt-l { rotate: -1.2deg; }
 .tilt-r { rotate: 1deg; }

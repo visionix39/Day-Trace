@@ -28,6 +28,7 @@ export interface Person {
 
 /** Colour family for a thread; each maps to a token in globals.css. */
 export type Hue = "thread" | "sky" | "rose" | "sage" | "plum" | "honey" | "clay";
+export const HUES: Hue[] = ["thread", "sky", "rose", "sage", "plum", "honey", "clay"];
 
 export interface Thread {
   id: string;
@@ -42,6 +43,8 @@ export interface Thread {
  */
 export type ItemKind = "todo" | "waiting" | "event";
 
+export type Relation = "depends_on" | "part_of" | "follows_up" | "related";
+
 export interface Mention {
   note: string;
   role: "created" | "updated" | "resolved";
@@ -50,11 +53,12 @@ export interface Mention {
 export interface Item {
   id: string;
   kind: ItemKind;
-  thread: string;
+  /** null until the item is filed under a thread ("loose ends"). */
+  thread: string | null;
   title: string;
   people: string[];
   due: string | null;
-  time?: string;
+  time?: string | null;
   due_text: string | null;
   status: "open" | "done";
   mentions: Mention[];
@@ -63,6 +67,16 @@ export interface Item {
 export interface Link {
   from: string;
   to: string;
-  relation: "depends_on" | "part_of" | "follows_up" | "related";
+  relation: Relation;
   why: string;
+}
+
+/** Everything in the database, read out in one go for the UI. */
+export interface Snapshot {
+  owner: string | null;
+  notes: Note[];
+  people: Person[];
+  threads: Thread[];
+  items: Item[];
+  links: Link[];
 }

@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
 import type { Bucket } from "@/lib/dates";
-import { dailyList, itemById, linksFor, threadById } from "@/lib/seed";
+import { useDesk } from "@/lib/store";
 import type { Item } from "@/lib/types";
+import type { DeskView } from "@/lib/view";
 import { DueChip, PersonStamp } from "./Chips";
 import { CheckDoodle } from "./Doodles";
 
@@ -24,20 +24,13 @@ const verbs = {
 } as const;
 
 /**
- * The daily follow-up list, written on a ruled notebook page. Ticking things
- * off only lives in this tab for now; saving it is part of the SQLite step.
+ * The daily follow-up list, written on a ruled notebook page. Ticking an item
+ * saves it to the database straight away.
  */
-export function DailyList() {
-  const list = dailyList();
-  const [done, setDone] = useState<Set<string>>(new Set());
-
-  const toggle = (id: string) =>
-    setDone((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+export function DailyList({ view }: { view: DeskView }) {
+  const list = view.dailyList();
+  const toggleDone = useDesk((s) => s.toggleDone);
+  const empty = shelves.every(({ id }) => !list[id].length);
 
   return (
     <section aria-labelledby="daily-title" className="sheet ruled relative pt-5 pb-6">
@@ -46,13 +39,19 @@ export function DailyList() {
         Your follow-ups
       </h2>
 
+      {empty && (
+        <p className="font-hand mt-8 pr-6 pl-[62px] text-[1.35rem] leading-8 text-ink-3">
+          a clean page ✿ drop a note in above and anything you need to follow up on lands here.
+        </p>
+      )}
+
       {shelves.map(({ id, title }) =>
         list[id].length ? (
           <div key={id} className="mt-8">
             <h3 className="font-hand pl-[62px] text-[1.4rem] leading-8 text-thread">{title}</h3>
             <ul>
               {list[id].map((item) => (
-                <Row key={item.id} item={item} done={done.has(item.id)} onToggle={() => toggle(item.id)} />
+                <Row key={item.id} item={item} view={view} onToggle={() => toggleDone(item.id)} />
               ))}
             </ul>
           </div>
@@ -62,11 +61,12 @@ export function DailyList() {
   );
 }
 
-function Row({ item, done, onToggle }: { item: Item; done: boolean; onToggle: () => void }) {
-  const thread = threadById.get(item.thread)!;
+function Row({ item, view, onToggle }: { item: Item; view: DeskView; onToggle: () => void }) {
+  const thread = view.threadOf(item);
+  const done = item.status === "done";
   // Show the one connection that best explains *why* this matters.
-  const link = linksFor(item.id)[0];
-  const other = link && itemById.get(link.from === item.id ? link.to : link.from);
+  const link = view.linksFor(item.id)[0];
+  const other = link && view.itemById.get(link.from === item.id ? link.to : link.from);
 
   return (
     <li className={`hue-${thread.hue} group flex gap-3 py-2 pr-4 pl-3 sm:pr-6`} data-done={done}>
@@ -94,10 +94,10 @@ function Row({ item, done, onToggle }: { item: Item; done: boolean; onToggle: ()
             {thread.title}
           </span>
           {item.people.map((p) => (
-            <PersonStamp key={p} id={p} />
+            <PersonStamp key={p} person={view.personById.get(p)} />
           ))}
           <span className="ml-auto">
-            <DueChip due={item.due} time={item.time} />
+            <DueChip today={view.today} due={item.due} time={item.time} />
           </span>
         </div>
         {other && (

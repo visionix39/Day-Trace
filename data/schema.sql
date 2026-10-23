@@ -86,6 +86,12 @@ CREATE TABLE note_embeddings (
   vector   BLOB NOT NULL
 );
 
+-- Small facts about the database itself, e.g. whose sample day it holds.
+CREATE TABLE meta (
+  key    TEXT PRIMARY KEY,
+  value  TEXT
+);
+
 -- The daily list asks "what's open, soonest first" constantly.
 CREATE INDEX items_open_by_due ON items (status, due);
 CREATE INDEX mentions_by_note  ON item_mentions (note_id);

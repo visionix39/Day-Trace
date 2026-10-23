@@ -7,3 +7,6 @@ out/
 *.tsbuildinfo
 next-env.d.ts
 .DS_Store
+
+# copied from node_modules by scripts/copy-wasm.mjs
+public/sql-wasm.wasm
