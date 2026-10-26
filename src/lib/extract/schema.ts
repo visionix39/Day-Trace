@@ -1,11 +1,10 @@
 /**
  * The exact JSON shape an AI must answer with.
  *
- * Every provider supports "structured outputs": you hand it a JSON Schema and
- * it is constrained to produce JSON that fits. We write the shape once with
- * zod, give providers the JSON Schema version of it, and then check the
- * answer with zod again - so a model that drifts (a local one, say) is caught
- * here rather than half-saving bad data.
+ * With "structured outputs" you hand the AI a JSON Schema and it is
+ * constrained to produce JSON that fits. We write the shape once with zod,
+ * send the JSON Schema version of it, and check the answer with zod again -
+ * so anything off is caught here rather than half-saving bad data.
  */
 
 import { z } from "zod";
@@ -59,11 +58,10 @@ export const Extraction = z.object({
 export type Extraction = z.infer<typeof Extraction>;
 
 /**
- * The JSON Schema version, tightened the way the strictest providers want:
- * every object closed to extra keys, and no $schema header.
+ * A JSON Schema tightened the way strict structured outputs require: every
+ * object closed to extra keys, and no $schema header.
  */
-export function extractionJsonSchema(): Record<string, unknown> {
-  const schema = z.toJSONSchema(Extraction) as Record<string, unknown>;
+export function closeSchema(schema: Record<string, unknown>): Record<string, unknown> {
   delete schema.$schema;
   const close = (node: unknown) => {
     if (!node || typeof node !== "object") return;
@@ -74,3 +72,5 @@ export function extractionJsonSchema(): Record<string, unknown> {
   close(schema);
   return schema;
 }
+
+export const extractionJsonSchema = () => closeSchema(z.toJSONSchema(Extraction) as Record<string, unknown>);

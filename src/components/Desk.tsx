@@ -7,8 +7,11 @@ import { Composer } from "./Composer";
 import { DailyList } from "./DailyList";
 import { KnotLogo } from "./Doodles";
 import { InboxStack } from "./InboxStack";
+import { LookBack } from "./LookBack";
 import { Masthead } from "./Masthead";
+import { Nudges } from "./Nudges";
 import { ThreadStrands } from "./ThreadStrands";
+import { UndoToast } from "./UndoToast";
 import { WaitingOn } from "./WaitingOn";
 
 /**
@@ -52,6 +55,10 @@ export function Desk() {
         <Composer view={view} />
       </div>
 
+      <div className="mt-12">
+        <Nudges view={view} />
+      </div>
+
       <div className="mt-12 grid gap-12 lg:grid-cols-[minmax(0,7fr)_minmax(0,4fr)] lg:gap-10">
         <DailyList view={view} />
         <aside className="space-y-12">
@@ -61,12 +68,17 @@ export function Desk() {
       </div>
 
       <div className="mt-16">
+        <LookBack view={view} />
+      </div>
+
+      <div className="mt-16">
         <ThreadStrands view={view} />
       </div>
 
       <footer className="mt-16 text-center">
         <p className="font-hand text-[1.15rem] text-ink-3">
-          {view.owner ? `this is ${view.owner}'s sample day - everyone in it is made up · ` : ""}your notebook lives only in this browser
+          {view.owner ? `this is ${view.owner}'s sample day - everyone in it is made up · ` : ""}your notebook lives only in this browser · in AI mode, each
+          note is sent to a free AI (Groq) to be read, and DayTrace keeps no copy
         </p>
         <div className="mt-2 flex flex-wrap justify-center gap-x-4 gap-y-1 text-[0.78rem] font-semibold text-ink-3">
           <button type="button" onClick={() => confirmReset(false)} className="hover:text-thread hover:underline">
@@ -77,6 +89,7 @@ export function Desk() {
           </button>
         </div>
       </footer>
+      <UndoToast />
     </main>
   );
 }

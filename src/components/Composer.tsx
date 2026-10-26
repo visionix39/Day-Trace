@@ -1,13 +1,11 @@
 "use client";
 
-import { Camera, MessageCircle, PenLine, Sparkles } from "lucide-react";
+import { Camera, MessageCircle, PenLine, Sparkles, WifiOff } from "lucide-react";
 import { useState } from "react";
-import { findProvider, modelLabel } from "@/lib/extract/providers/catalog";
 import { useDesk } from "@/lib/store";
 import type { NoteSource } from "@/lib/types";
 import type { DeskView } from "@/lib/view";
 import { KnotLogo } from "./Doodles";
-import { HelperSettings } from "./HelperSettings";
 import { ReviewCard } from "./ReviewCard";
 
 const sources: { id: NoteSource; label: string; Icon: typeof PenLine }[] = [
@@ -23,25 +21,23 @@ const placeholders: Record<NoteSource, string> = {
 };
 
 /**
- * The inbox slot: an index card you drop things onto. Underneath it, the
- * helper settings and the review card take turns appearing.
+ * The inbox slot: an index card you drop things onto. The review card opens
+ * underneath it once a note has been read.
  */
 export function Composer({ view }: { view: DeskView }) {
   const [source, setSource] = useState<NoteSource>("note");
   const [text, setText] = useState("");
   const [from, setFrom] = useState("");
-  const [showHelper, setShowHelper] = useState(false);
   const draft = useDesk((s) => s.draft);
-  const settings = useDesk((s) => s.settings);
+  const mode = useDesk((s) => s.mode);
+  const setMode = useDesk((s) => s.setMode);
   const submit = useDesk((s) => s.submit);
 
   const reading = draft.status === "reading";
-  const helperName = settings.helper === "offline" ? "Offline rules" : modelLabel(settings.helper, settings.models[settings.helper]);
-  const needsKey = settings.helper !== "offline" && !!findProvider(settings.helper).keyLabel && !settings.keys[settings.helper].trim();
+  const ai = mode === "ai";
 
   const go = () => {
     if (!text.trim() || reading) return;
-    setShowHelper(false);
     void submit({ text, source, from: source === "message" ? from : undefined });
   };
 
@@ -57,13 +53,14 @@ export function Composer({ view }: { view: DeskView }) {
             </label>
             <button
               type="button"
-              onClick={() => setShowHelper((v) => !v)}
-              aria-expanded={showHelper}
+              onClick={() => setMode(ai ? "offline" : "ai")}
+              aria-pressed={ai}
+              title={ai ? "Read by the free AI. Click to use simple offline rules instead." : "Read by simple rules in your browser. Click to use the free AI."}
               className="flex items-center gap-1.5 rounded-full border-[1.5px] border-dashed border-rule px-2.5 py-0.5 text-[0.75rem] font-semibold text-ink-2 hover:border-ink-3"
             >
-              <Sparkles className="h-3.5 w-3.5 text-thread" strokeWidth={2.2} />
-              read by: {helperName}
-              {needsKey && <span className="text-thread">· needs a key</span>}
+              {ai ? <Sparkles className="h-3.5 w-3.5 text-thread" strokeWidth={2.2} /> : <WifiOff className="h-3.5 w-3.5 text-ink-3" strokeWidth={2.2} />}
+              read by: {ai ? "DayTrace AI" : "Offline rules"}
+              <span className="text-ink-3">· switch</span>
             </button>
           </div>
 
@@ -155,8 +152,6 @@ export function Composer({ view }: { view: DeskView }) {
           />
         )}
       </section>
-
-      {showHelper && <HelperSettings onClose={() => setShowHelper(false)} />}
     </div>
   );
 }

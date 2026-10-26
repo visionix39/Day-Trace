@@ -213,3 +213,66 @@ export async function resetDatabase(today: string, withSample: boolean): Promise
   await persist();
   return readSnapshot();
 }
+
+// ------------------------------------------------- small facts and edits
+
+export function getMeta(key: string): string | null {
+  return rows<{ value: string }>("SELECT value FROM meta WHERE key = ?", [key])[0]?.value ?? null;
+}
+
+export async function setMeta(key: string, value: string): Promise<void> {
+  run("INSERT OR REPLACE INTO meta VALUES (?, ?)", [key, value]);
+  await persist();
+}
+
+/** Fixes an item after the fact: a better title, the right date. */
+export async function updateItem(id: string, patch: { title?: string; due?: string | null }): Promise<Snapshot> {
+  if (patch.title !== undefined) run("UPDATE items SET title = ? WHERE id = ?", [patch.title, id]);
+  if (patch.due !== undefined) run("UPDATE items SET due = ? WHERE id = ?", [patch.due, id]);
+  await persist();
+  return readSnapshot();
+}
+
+/** Removes an item; its people, history and links go with it (ON DELETE CASCADE). */
+export async function deleteItem(id: string): Promise<Snapshot> {
+  run("DELETE FROM items WHERE id = ?", [id]);
+  await persist();
+  return readSnapshot();
+}
+
+// ------------------------------------------------------------------ undo
+
+/**
+ * Undo is the simplest kind there is: before a change, keep a copy of the
+ * whole database (it's small - a few hundred KB); to undo, put the copy back.
+ */
+export const checkpoint = (): Uint8Array => db!.export();
+
+export async function restore(bytes: Uint8Array): Promise<Snapshot> {
+  const SQL = await initSqlJs({ locateFile: (file) => `/${file}` });
+  db?.close();
+  db = new SQL.Database(bytes);
+  await persist();
+  return readSnapshot();
+}
+
+// ------------------------------------------------------------ embeddings
+
+/** Stored note vectors for one embedding model, by note id. */
+export function readEmbeddings(model: string): Map<string, Float32Array> {
+  const out = new Map<string, Float32Array>();
+  for (const r of rows<{ note_id: string; vector: Uint8Array }>("SELECT note_id, vector FROM note_embeddings WHERE model = ?", [model])) {
+    // Copy into a fresh buffer: the bytes SQLite hands back may not be 4-byte aligned.
+    out.set(r.note_id, new Float32Array(r.vector.slice().buffer));
+  }
+  return out;
+}
+
+export async function saveEmbeddings(model: string, vectors: Map<string, Float32Array>): Promise<void> {
+  transaction(() => {
+    for (const [noteId, v] of vectors) {
+      run("INSERT OR REPLACE INTO note_embeddings VALUES (?, ?, ?)", [noteId, model, new Uint8Array(v.buffer, v.byteOffset, v.byteLength).slice()]);
+    }
+  });
+  await persist();
+}

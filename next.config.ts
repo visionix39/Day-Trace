@@ -1,10 +1,11 @@
 import type { NextConfig } from "next";
 
 /**
- * DayTrace has no server of its own. `next build` prerenders the page and
- * Vercel serves it from the CDN. Everything that touches your notes - the
- * SQLite database, the rule-based extractor and the AI calls - runs in the
- * browser, so your unfinished business never sits on a machine we run.
+ * The page is prerendered and served from Vercel's CDN. Your notebook - the
+ * SQLite database, search, the offline rules - lives in the browser. The only
+ * server code is two small serverless functions in src/app/api, which hold
+ * the free Groq key and pass a note to the AI and the answer back. They don't
+ * store anything.
  */
 const nextConfig: NextConfig = {
   reactStrictMode: true,
@@ -18,6 +19,8 @@ const nextConfig: NextConfig = {
     if (!isServer) {
       config.resolve.fallback = { ...config.resolve.fallback, fs: false, path: false, crypto: false };
     }
+    // transformers.js (in-browser search) has optional Node-only parts we never use.
+    config.resolve.alias = { ...config.resolve.alias, sharp$: false, "onnxruntime-node$": false };
     return config;
   },
 };
