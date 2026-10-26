@@ -8,7 +8,7 @@
  */
 
 import { AiError, aiModel, askForJson } from "@/lib/ai/groq";
-import { allow, json, readJson, sameSite } from "@/lib/ai/guard";
+import { allow, identify, json, readJson, sameSite } from "@/lib/ai/guard";
 import { ExtractRequest } from "@/lib/extract/context";
 import { SYSTEM, userMessage } from "@/lib/extract/prompt";
 import { Extraction, extractionJsonSchema } from "@/lib/extract/schema";
@@ -19,7 +19,8 @@ export const maxDuration = 60;
 export async function POST(req: Request) {
   if (!sameSite(req)) return json({ error: "forbidden" }, 403);
   if (!process.env.GROQ_API_KEY) return json({ error: "no_key" }, 503);
-  if (!allow(req, "extract", 15)) return json({ error: "rate" }, 429);
+  const who = await identify(req);
+  if (!allow(who, "extract", who.signedIn ? 30 : 10)) return json({ error: "rate" }, 429);
 
   let body: ExtractRequest;
   try {

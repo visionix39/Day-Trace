@@ -10,6 +10,8 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
+  // Lets a second dev server (e.g. one testing other settings) build into its own folder.
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   webpack(config, { isServer }) {
     // Lets the app `import schema from "../../data/schema.sql"` as a plain
     // string, so that file stays the one source of truth for the tables.

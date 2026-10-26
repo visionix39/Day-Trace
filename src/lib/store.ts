@@ -1,7 +1,10 @@
 /**
- * App state, in one zustand store: the latest database snapshot, how notes
- * get read, the note being reviewed, today's nudges, the search index, and
- * the one-step undo.
+ * App state, in one zustand store: who's signed in, the latest database
+ * snapshot, how notes get read, the note being reviewed, today's nudges, the
+ * search index, and the one-step undo.
+ *
+ * Signing in (or choosing "just look around") opens that person's notebook;
+ * everything below works the same for both.
  *
  * The flow for a new note:
  *   submit()  -> status "reading"  (the AI or the offline rules are working)
@@ -10,6 +13,7 @@
  */
 
 import { create } from "zustand";
+import { authEnabled, supabase, toAccount, type Account } from "./auth/supabase";
 import { localNow, localToday } from "./dates";
 import * as db from "./db";
 import { extract, type ReadMode } from "./extract";
@@ -24,7 +28,12 @@ type Draft =
   | { status: "review"; proposal: Proposal }
   | { status: "error"; message: string };
 
+type AuthResult = { ok: true; needsConfirm?: boolean } | { ok: false; message: string };
+
 interface State {
+  /** checking = reading a saved session; signed-out = show the welcome page. */
+  account: { status: "checking" | "signed-out" | "guest" | "signed-in"; user: Account | null };
+  sync: db.SyncStatus;
   phase: "loading" | "ready" | "failed";
   loadError: string | null;
   today: string;
@@ -39,6 +48,10 @@ interface State {
   index: { status: "idle" | "loading" | "ready" | "unavailable"; vectors: Map<string, Float32Array> };
 
   init: () => Promise<void>;
+  signUp: (input: { name: string; email: string; password: string }) => Promise<AuthResult>;
+  signIn: (input: { email: string; password: string }) => Promise<AuthResult>;
+  continueAsGuest: () => Promise<void>;
+  signOut: () => Promise<void>;
   setMode: (mode: ReadMode) => void;
   submit: (input: { text: string; source: NoteSource; from?: string }) => Promise<void>;
   save: (keep: Set<string>) => Promise<void>;
@@ -66,6 +79,18 @@ function loadMode(): ReadMode {
 }
 
 let inFlight: AbortController | null = null;
+let started = false;
+
+/** Supabase's error messages, said a little more kindly. */
+function friendly(message: string): string {
+  if (/invalid login credentials/i.test(message)) return "That email and password don't match. Try again?";
+  if (/already registered|already exists/i.test(message)) return "There's already an account with that email - try signing in.";
+  if (/email not confirmed/i.test(message)) return "Please confirm your email first - check your inbox for the link.";
+  if (/password/i.test(message) && /at least|short|weak/i.test(message)) return "That password is too short - use at least 8 characters.";
+  if (/rate limit|too many/i.test(message)) return "Too many tries - wait a minute and try again.";
+  if (/failed to fetch|network|load failed/i.test(message)) return "Couldn't reach the sign-in service. Check your connection and try again.";
+  return message;
+}
 
 export const useDesk = create<State>((set, get) => {
   /** Runs a database change with an undo point in front of it. */
@@ -76,7 +101,22 @@ export const useDesk = create<State>((set, get) => {
     void get().loadNudges();
   }
 
+  /** Opens one person's notebook, starting every per-notebook bit of state fresh. */
+  async function openFor(owner: db.Owner, account: State["account"]) {
+    set({ account, phase: "loading", snapshot: null, justDone: new Set(), undo: null, draft: { status: "idle" }, nudges: { status: "idle", set: null }, index: { status: "idle", vectors: new Map() } });
+    try {
+      set({ snapshot: await db.openDatabase(get().today, owner), phase: "ready" });
+    } catch (error) {
+      set({ phase: "failed", loadError: error instanceof Error ? error.message : String(error) });
+      return;
+    }
+    void get().loadNudges();
+    void get().indexNotes();
+  }
+
   return {
+    account: { status: "checking", user: null },
+    sync: "local",
     phase: "loading",
     loadError: null,
     today: localToday(),
@@ -89,17 +129,48 @@ export const useDesk = create<State>((set, get) => {
     index: { status: "idle", vectors: new Map() },
 
     async init() {
-      if (get().snapshot) return;
-      const today = localToday();
-      set({ today, mode: loadMode() });
-      try {
-        set({ snapshot: await db.openDatabase(today), phase: "ready" });
-      } catch (error) {
-        set({ phase: "failed", loadError: error instanceof Error ? error.message : String(error) });
-        return;
-      }
-      void get().loadNudges();
-      void get().indexNotes();
+      if (started) return;
+      started = true;
+      set({ today: localToday(), mode: loadMode() });
+      db.onSyncStatus((sync) => set({ sync }));
+
+      // No accounts set up on this site: everyone gets a notebook in their browser.
+      if (!authEnabled) return openFor({ kind: "guest" }, { status: "guest", user: null });
+
+      // If the session ends elsewhere (signed out in another tab, expired), show the welcome page.
+      supabase().auth.onAuthStateChange((event) => {
+        if (event === "SIGNED_OUT" && get().account.status === "signed-in") set({ account: { status: "signed-out", user: null }, snapshot: null });
+      });
+      const { data } = await supabase().auth.getSession();
+      if (data.session) await openFor({ kind: "user", id: data.session.user.id }, { status: "signed-in", user: toAccount(data.session.user) });
+      else set({ account: { status: "signed-out", user: null } });
+    },
+
+    async signUp({ name, email, password }) {
+      const { data, error } = await supabase().auth.signUp({ email: email.trim(), password, options: { data: { name: name.trim() } } });
+      if (error) return { ok: false, message: friendly(error.message) };
+      // With email confirmation on (Supabase's default), there's no session until the link is clicked.
+      if (!data.session || !data.user) return { ok: true, needsConfirm: true };
+      await openFor({ kind: "user", id: data.user.id }, { status: "signed-in", user: toAccount(data.user) });
+      return { ok: true };
+    },
+
+    async signIn({ email, password }) {
+      const { data, error } = await supabase().auth.signInWithPassword({ email: email.trim(), password });
+      if (error) return { ok: false, message: friendly(error.message) };
+      await openFor({ kind: "user", id: data.user.id }, { status: "signed-in", user: toAccount(data.user) });
+      return { ok: true };
+    },
+
+    async continueAsGuest() {
+      await openFor({ kind: "guest" }, { status: "guest", user: null });
+    },
+
+    async signOut() {
+      inFlight?.abort();
+      await db.closeDatabase();
+      if (authEnabled) await supabase().auth.signOut();
+      set({ account: { status: "signed-out", user: null }, snapshot: null, undo: null, draft: { status: "idle" } });
     },
 
     setMode(mode) {

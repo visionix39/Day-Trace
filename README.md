@@ -12,6 +12,8 @@ day with a few next steps.
 
 Free for everyone who opens it: the AI runs on Groq's free tier with the
 site's own key, and search runs on an open-source model inside your browser.
+Make an account and your notebook follows you to any device; or just look
+around as a guest.
 
 ## Run it
 
@@ -30,6 +32,28 @@ and put it in `.env.local` as `GROQ_API_KEY=...`. Restart `npm run dev`.
 Without a key everything still works: notes are read by the offline rules
 instead, and the app says so.
 
+## Turn on accounts (optional, free)
+
+With accounts, everyone signs up and gets their own notebook, saved online and
+available on any device. Without them, each browser keeps one notebook.
+
+1. Create a free project at [supabase.com](https://supabase.com) (no card).
+2. **SQL Editor → New query**: paste all of [`supabase/setup.sql`](supabase/setup.sql)
+   and press **Run**. This creates a private `notebooks` storage bucket, plus
+   rules that let each person reach only their own folder.
+3. **Project Settings → API Keys**: copy the **Project URL** and the
+   **publishable key** (`sb_publishable_…`) into `.env.local` as
+   `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
+   Both are safe to expose in a browser. Never use the *secret* key here.
+4. **Authentication → URL Configuration**: set the Site URL to
+   `http://localhost:3200` while developing, and to your Vercel address once
+   deployed. The "confirm your email" link sends people there.
+5. Restart `npm run dev`. You'll see the welcome page with **Sign in**, **New
+   here?** and **just look around**.
+
+Supabase asks new users to confirm their email by default. For quick testing
+you can switch that off under **Authentication → Sign In / Providers → Email**.
+
 | Command              | What it does                                                    |
 | -------------------- | --------------------------------------------------------------- |
 | `npm run eval`       | Scores the offline rules against the answer key                 |
@@ -42,13 +66,16 @@ instead, and the app says so.
 
 1. Import the GitHub repo at [vercel.com/new](https://vercel.com/new). The
    defaults are right.
-2. In **Settings → Environment Variables**, add `GROQ_API_KEY` with your key.
+2. In **Settings → Environment Variables**, add `GROQ_API_KEY`, and (for
+   accounts) `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
 3. Deploy. Anyone with the link can use the AI. The key stays on Vercel and is
    never sent to visitors' browsers.
 
 ## Try it
 
-1. Open the app. The first visit fills your notebook with the sample day.
+1. Open the app. Make an account (your notebook starts empty, and the footer
+   link **bring back the sample day** fills it in), or choose **just look
+   around** to start with Mina's sample day.
 2. **Start here** shows up to three next steps. For a nudge, there's a
    ready-to-send message you can copy.
 3. Drop a note in and press **Tuck it in** (or ⌘ + Enter):
@@ -81,12 +108,18 @@ instead, and the app says so.
       └─► today's open items ─► /api/suggest ─► Start here nudges
 ```
 
-- **Your notebook lives in your browser.** It's real SQLite compiled to
-  WebAssembly, created from `data/schema.sql` and saved to IndexedDB after each
-  change. Undo is just "put back the copy from before".
+- **Your notebook is a SQLite file.** It's real SQLite compiled to WebAssembly,
+  created from `data/schema.sql`, running in your browser and saved to
+  IndexedDB after each change. Undo is just "put back the copy from before".
+- **Accounts sync that file.** When you're signed in, the file is also
+  uploaded to your private Supabase folder a moment after each change, and
+  downloaded when you sign in anywhere. If two devices edit at once, the last
+  save wins. Signing out removes the copy from that computer. Guests keep
+  theirs in the browser only.
 - **The AI call goes through our server only to protect the key.** The two
-  routes in `src/app/api` check the request, rate-limit each visitor, forward
-  it to Groq and return the answer. They store nothing.
+  routes in `src/app/api` check the request, rate-limit each person (signed-in
+  accounts get a bigger share than guests; sign-in tokens are verified with
+  Supabase), forward it to Groq and return the answer. They store nothing.
 - **Structured outputs.** The model is handed a JSON Schema
   (`src/lib/extract/schema.ts`) in strict mode, so its answer always has the
   right shape. It's checked again on both server and browser, and anything
@@ -122,16 +155,18 @@ day-trace/
 ├─ data/                     schema.sql and the synthetic dataset + answer key
 ├─ eval/                     saved scores from npm run eval
 ├─ scripts/                  eval.ts, check-seed.mjs, copy-wasm.mjs
+├─ supabase/setup.sql        one-time setup for accounts (bucket + security rules)
 └─ src/
    ├─ app/
    │  ├─ api/extract/        serverless: read a note with the AI
    │  └─ api/suggest/        serverless: pick today's next steps
-   ├─ components/            Desk, Composer, ReviewCard, Nudges, DailyList,
+   ├─ components/            Welcome (sign in), Desk, Composer, ReviewCard, Nudges, DailyList,
    │                         WaitingOn, InboxStack, LookBack, ThreadStrands,
    │                         UndoToast, Masthead, Chips, Doodles
    └─ lib/
       ├─ ai/                 Groq client (server only) and route guard rails
-      ├─ db/                 SQLite in the browser, IndexedDB, sample day
+      ├─ auth/               Supabase client, account helpers
+      ├─ db/                 SQLite in the browser, IndexedDB, account sync, sample day
       ├─ extract/            offline rules, schema, prompt, context (RAG), checks
       ├─ search/             embeddings worker, time phrases, hybrid ranking
       ├─ suggest/            nudges: schema, prompt, offline picker
@@ -150,6 +185,7 @@ day-trace/
 | **sql.js**               | Real SQLite in the browser. Same SQL as a .sqlite file, no database server.                       |
 | **transformers.js + bge-small** | Open-source embeddings running in the browser: semantic search with no key and no cost.    |
 | **zod**                  | Writes each AI answer shape once; makes the JSON Schema and checks the reply.                     |
+| **Supabase (free tier)** | Sign-up / sign-in and a private storage folder per person. No server to run; passwords never touch our code. |
 | **zustand**              | One small store, so every section reads the same snapshot.                                        |
 | **Tailwind CSS 4**       | Layout. The paper, tape and stitches are hand-written CSS in `globals.css`.                       |
 
@@ -164,8 +200,11 @@ Figtree, Caveat, Courier Prime.
 
 ## Privacy
 
-- Your notebook (notes, items, search vectors) is stored only in your
-  browser's IndexedDB.
+- **Guests:** the notebook (notes, items, search vectors) is stored only in
+  this browser's IndexedDB.
+- **Accounts:** the notebook file is also kept in your private Supabase
+  folder. Security rules mean only you can read or write it. Passwords are
+  handled by Supabase and never touch DayTrace's code.
 - In **AI mode**, each note you tuck in (with the related open items and the
   names in your notebook) is sent through DayTrace's server to Groq to be
   read. DayTrace keeps no copy. Groq says it doesn't retain inference data by
@@ -186,7 +225,8 @@ Figtree, Caveat, Courier Prime.
 - [x] Link related items across notes, with RAG context
 - [x] Search history with embeddings and time-aware retrieval
 - [x] Next-step suggestions with ready-to-send drafts
-- [ ] Ideas: export/import the notebook file, reminders, screenshot OCR in the browser
+- [x] Accounts: sign up / sign in, each person's notebook synced to their account
+- [ ] Ideas: password reset and Google sign-in, export/import the notebook file, reminders, screenshot OCR in the browser
 
 ## Sample data
 

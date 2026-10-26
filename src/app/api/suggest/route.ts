@@ -6,7 +6,7 @@
  */
 
 import { AiError, aiModel, askForJson } from "@/lib/ai/groq";
-import { allow, json, readJson, sameSite } from "@/lib/ai/guard";
+import { allow, identify, json, readJson, sameSite } from "@/lib/ai/guard";
 import { SUGGEST_SYSTEM, SuggestRequest, Suggestions, suggestionsJsonSchema, suggestUserMessage } from "@/lib/suggest/schema";
 
 export const runtime = "nodejs";
@@ -15,7 +15,8 @@ export const maxDuration = 60;
 export async function POST(req: Request) {
   if (!sameSite(req)) return json({ error: "forbidden" }, 403);
   if (!process.env.GROQ_API_KEY) return json({ error: "no_key" }, 503);
-  if (!allow(req, "suggest", 8)) return json({ error: "rate" }, 429);
+  const who = await identify(req);
+  if (!allow(who, "suggest", who.signedIn ? 12 : 5)) return json({ error: "rate" }, 429);
 
   let body: SuggestRequest;
   try {

@@ -14,6 +14,7 @@
  * that doesn't hold up is dropped.
  */
 
+import { authHeader } from "../auth/supabase";
 import type { Item, Note, Snapshot } from "../types";
 import { buildRequest } from "./context";
 import { findPerson } from "./match";
@@ -47,7 +48,7 @@ export async function extract(
   try {
     const res = await fetch("/api/extract", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(await authHeader()) },
       body: JSON.stringify(buildRequest(note, desk, today, opts.similarity)),
       signal: opts.signal,
     });

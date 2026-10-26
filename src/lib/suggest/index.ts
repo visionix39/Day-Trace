@@ -12,6 +12,7 @@
 import { daysBetween } from "../dates";
 import { getMeta, setMeta } from "../db";
 import { engineLabel, type ReadMode } from "../extract";
+import { authHeader } from "../auth/supabase";
 import type { Item, Snapshot } from "../types";
 import { Suggestions, type SuggestRequest } from "./schema";
 
@@ -135,7 +136,7 @@ export async function getNudges(desk: Snapshot, today: string, mode: ReadMode, f
     try {
       const res = await fetch("/api/suggest", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(await authHeader()) },
         body: JSON.stringify(buildSuggestRequest(desk, today)),
       });
       const body = (await res.json().catch(() => ({}))) as { suggestions?: unknown; model?: string; error?: string };

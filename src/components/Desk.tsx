@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo } from "react";
+import { authEnabled, authProblem } from "@/lib/auth/supabase";
 import { useDesk } from "@/lib/store";
 import { buildView } from "@/lib/view";
 import { Composer } from "./Composer";
@@ -13,15 +14,19 @@ import { Nudges } from "./Nudges";
 import { ThreadStrands } from "./ThreadStrands";
 import { UndoToast } from "./UndoToast";
 import { WaitingOn } from "./WaitingOn";
+import { Welcome } from "./Welcome";
 
 /**
- * The whole desk. It opens the in-browser database once, then every section
- * draws from the same snapshot, so they can never disagree with each other.
+ * The whole desk. Once you've signed in (or chosen to look around), it opens
+ * your notebook, and every section draws from the same snapshot, so they can
+ * never disagree with each other.
  */
 export function Desk() {
-  const { phase, loadError, snapshot, today, justDone, init, reset } = useDesk();
+  const { account, sync, phase, loadError, snapshot, today, justDone, init, reset } = useDesk();
   useEffect(() => void init(), [init]);
   const view = useMemo(() => (snapshot ? buildView(snapshot, today, justDone) : null), [snapshot, today, justDone]);
+
+  if (account.status === "signed-out") return <Welcome />;
 
   if (phase === "failed") {
     return (
@@ -49,6 +54,11 @@ export function Desk() {
 
   return (
     <main className="mx-auto max-w-6xl px-4 pt-10 pb-16 sm:px-8 sm:pt-14">
+      {authProblem && (
+        <p role="alert" className="mb-6 rounded-md border-[1.5px] border-dashed border-thread px-4 py-2 text-[0.85rem] text-thread">
+          {authProblem} Fix it in your .env file and restart the dev server.
+        </p>
+      )}
       <Masthead view={view} />
 
       <div className="mt-10">
@@ -77,8 +87,8 @@ export function Desk() {
 
       <footer className="mt-16 text-center">
         <p className="font-hand text-[1.15rem] text-ink-3">
-          {view.owner ? `this is ${view.owner}'s sample day - everyone in it is made up · ` : ""}your notebook lives only in this browser · in AI mode, each
-          note is sent to a free AI (Groq) to be read, and DayTrace keeps no copy
+          {view.owner ? `this is ${view.owner}'s sample day - everyone in it is made up · ` : ""}
+          {SYNC_TEXT[account.status === "signed-in" ? sync : "local"]} · in AI mode, each note is read by a free AI (Groq), which keeps no copy
         </p>
         <div className="mt-2 flex flex-wrap justify-center gap-x-4 gap-y-1 text-[0.78rem] font-semibold text-ink-3">
           <button type="button" onClick={() => confirmReset(false)} className="hover:text-thread hover:underline">
@@ -93,6 +103,13 @@ export function Desk() {
     </main>
   );
 }
+
+const SYNC_TEXT = {
+  local: authEnabled ? "this guest notebook lives only in this browser" : "your notebook lives only in this browser",
+  saving: "saving to your account…",
+  saved: "saved to your account ✓",
+  offline: "couldn't reach your account - kept on this device, will retry",
+} as const;
 
 function Centered({ children }: { children: React.ReactNode }) {
   return <main className="grid min-h-[70vh] place-items-center px-4 text-center">{<div>{children}</div>}</main>;
