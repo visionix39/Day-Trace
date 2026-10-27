@@ -1,45 +1,69 @@
 /**
  * One entry point for reading a note: `extract(note, …)` returns a Proposal,
- * whichever helper did the reading.
+ * whichever reader did the work.
  *
- * For the AI helpers this is also the safety net. A model can name a thread
+ *  - "ai": the note (plus the relevant context) goes to our /api/extract
+ *    route, which asks the free Groq model. If that can't help - no key set
+ *    up, the free quota is busy, no connection - the offline rules step in
+ *    and the review card says so. You always get an answer.
+ *  - "offline": the hand-written rules, entirely in the browser.
+ *
+ * This file is also the safety net for AI answers: a model can name a thread
  * that doesn't exist, point at an item that's already done, or write a date
- * as "Friday". Everything it says is checked against the database here and
- * anything that doesn't hold up is dropped, so the review card only ever
- * shows changes that can actually be saved.
+ * as "Friday". Everything is checked against your notebook here and anything
+ * that doesn't hold up is dropped.
  */
 
-import type { Note, Snapshot } from "../types";
+import { authHeader } from "../auth/supabase";
+import type { Item, Note, Snapshot } from "../types";
+import { buildRequest } from "./context";
 import { findPerson } from "./match";
 import { extractOffline } from "./offline";
-import { SYSTEM, userMessage } from "./prompt";
-import { extractWith, ProviderError, type ProviderId } from "./providers";
-import { modelLabel } from "./providers/catalog";
 import { Extraction } from "./schema";
 import type { PersonRef, Proposal } from "./types";
 
-export type Engine = { kind: "offline" } | { kind: "ai"; provider: ProviderId; model: string; apiKey: string };
+export type ReadMode = "ai" | "offline";
+
+const FALLBACK: Record<string, string> = {
+  no_key: "The AI isn't switched on for this site yet, so the offline rules read this one.",
+  rate: "The free AI is busy right now, so the offline rules read this one. Try again in a few minutes.",
+};
 
 const isDate = (s: string | null | undefined): s is string => !!s && /^\d{4}-\d{2}-\d{2}$/.test(s) && !Number.isNaN(Date.parse(s));
 const isTime = (s: string | null | undefined): s is string => !!s && /^\d{2}:\d{2}$/.test(s);
 
-export async function extract(note: Note, desk: Snapshot, today: string, engine: Engine, signal?: AbortSignal): Promise<Proposal> {
-  if (engine.kind === "offline") return extractOffline(note, desk);
+/** "openai/gpt-oss-120b" -> "gpt-oss-120b via Groq". */
+export const engineLabel = (model: string) => `${model.split("/").pop()} via Groq`;
 
-  const raw = await extractWith(engine.provider, {
-    apiKey: engine.apiKey,
-    model: engine.model,
-    system: SYSTEM,
-    user: userMessage(note, desk, today),
-    signal,
-  });
-  const parsed = Extraction.safeParse(raw);
-  if (!parsed.success) throw new ProviderError("The AI's answer didn't match the expected shape. Try again, or pick a stronger model.", "other");
-  return toProposal(parsed.data, note, desk, modelLabel(engine.provider, engine.model));
+export async function extract(
+  note: Note,
+  desk: Snapshot,
+  today: string,
+  mode: ReadMode,
+  opts: { similarity?: (item: Item) => number; signal?: AbortSignal } = {},
+): Promise<Proposal> {
+  if (mode === "offline") return extractOffline(note, desk);
+
+  let reason = "Couldn't reach the AI, so the offline rules read this one.";
+  try {
+    const res = await fetch("/api/extract", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...(await authHeader()) },
+      body: JSON.stringify(buildRequest(note, desk, today, opts.similarity)),
+      signal: opts.signal,
+    });
+    const body = (await res.json().catch(() => ({}))) as { extraction?: unknown; model?: string; error?: string };
+    const parsed = Extraction.safeParse(body.extraction);
+    if (res.ok && parsed.success) return toProposal(parsed.data, note, desk, engineLabel(body.model ?? "AI"));
+    reason = FALLBACK[body.error ?? ""] ?? "The AI's answer didn't come through, so the offline rules read this one.";
+  } catch (error) {
+    if ((error as Error)?.name === "AbortError") throw error;
+  }
+  return { ...extractOffline(note, desk), notice: reason };
 }
 
 /** Turns a checked AI answer into a Proposal, keeping only what's valid. */
-function toProposal(x: Extraction, note: Note, desk: Snapshot, engine: string): Proposal {
+export function toProposal(x: Extraction, note: Note, desk: Snapshot, engine: string): Proposal {
   const threadIds = new Set(desk.threads.map((t) => t.id));
   const openIds = new Set(desk.items.filter((i) => i.status === "open").map((i) => i.id));
   const allIds = new Set(desk.items.map((i) => i.id));

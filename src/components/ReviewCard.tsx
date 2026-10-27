@@ -50,6 +50,8 @@ export function ReviewCard({ proposal, view, onSaved }: { proposal: Proposal; vi
         <span className="text-[0.72rem] font-semibold text-ink-3">read by {proposal.engine}</span>
       </div>
 
+      {proposal.notice && <p className="mt-1 text-[0.8rem] text-ink-2">{proposal.notice}</p>}
+
       {nothing && (
         <p className="font-hand mt-2 text-[1.25rem] leading-7 text-ink-2">
           nothing to follow up on in this one - I&apos;ll just keep it in your jar.

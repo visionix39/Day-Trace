@@ -11,10 +11,33 @@ import initSqlJs, { type Database, type SqlValue } from "sql.js";
 import schema from "../../../data/schema.sql";
 import type { Proposal } from "../extract/types";
 import { HUES, type Hue, type Item, type Link, type Mention, type Note, type Person, type Snapshot, type Thread } from "../types";
-import { loadBytes, saveBytes } from "./persist";
+import { downloadNotebook, uploadNotebook } from "./cloud";
+import { deleteBytes, loadBytes, saveBytes } from "./persist";
 import { sampleSnapshot } from "./sample";
 
+/** Whose notebook is open: a guest's (this browser only) or an account's (synced). */
+export type Owner = { kind: "guest" } | { kind: "user"; id: string };
+
+/**
+ * Where the latest change is:
+ *   local   - a guest notebook, kept in this browser
+ *   saving  - uploading to the account
+ *   saved   - safely in the account
+ *   offline - couldn't reach it; kept on this device and retried on the next change
+ */
+export type SyncStatus = "local" | "saving" | "saved" | "offline";
+
 let db: Database | null = null;
+let owner: Owner = { kind: "guest" };
+let syncListener: (status: SyncStatus) => void = () => {};
+let uploadTimer: ReturnType<typeof setTimeout> | null = null;
+let pendingUpload: Promise<void> | null = null;
+
+const slotFor = (o: Owner) => (o.kind === "user" ? `user-${o.id}` : "guest");
+
+export const onSyncStatus = (fn: (status: SyncStatus) => void) => {
+  syncListener = fn;
+};
 
 /** Short random ids like "i_3f9a1c2b". */
 const newId = (prefix: string) => `${prefix}_${crypto.randomUUID().replace(/-/g, "").slice(0, 8)}`;
@@ -42,31 +65,84 @@ function transaction(fn: () => void) {
   }
 }
 
-/** Writes the in-memory database to IndexedDB. */
+/** Uploads the account's notebook a moment after the last change, so a burst of ticks is one upload. */
+function scheduleUpload(userId: string) {
+  syncListener("saving");
+  if (uploadTimer) clearTimeout(uploadTimer);
+  uploadTimer = setTimeout(() => {
+    uploadTimer = null;
+    if (!db || owner.kind !== "user" || owner.id !== userId) return;
+    const bytes = db.export();
+    run("PRAGMA foreign_keys = ON");
+    pendingUpload = uploadNotebook(userId, bytes)
+      .then(() => syncListener("saved"))
+      .catch(() => syncListener("offline"))
+      .finally(() => (pendingUpload = null));
+  }, 1200);
+}
+
+/** Saves the in-memory database on this device, and to the account if signed in. */
 async function persist() {
-  await saveBytes(db!.export());
+  await saveBytes(slotFor(owner), db!.export());
   // Exporting resets per-connection settings, so switch this back on.
   run("PRAGMA foreign_keys = ON");
+  if (owner.kind === "user") scheduleUpload(owner.id);
 }
 
 /**
- * Opens the database: from IndexedDB if you've been here before, otherwise a
- * new one filled with the sample day.
+ * Opens a notebook.
+ *  - Accounts: the copy in the account if there is one (it may have been
+ *    changed on another device), else this device's copy, else a new, empty
+ *    notebook.
+ *  - Guests: this browser's copy, else the sample day.
  */
-export async function openDatabase(today: string): Promise<Snapshot> {
-  if (!db) {
-    // The .wasm file is served from public/ (copied there by scripts/copy-wasm.mjs).
-    const SQL = await initSqlJs({ locateFile: (file) => `/${file}` });
-    const saved = await loadBytes();
-    db = saved ? new SQL.Database(saved) : new SQL.Database();
-    run("PRAGMA foreign_keys = ON");
-    if (!saved) {
-      db.exec(schema);
-      insertSnapshot(sampleSnapshot(today));
-      await persist();
+export async function openDatabase(today: string, who: Owner): Promise<Snapshot> {
+  db?.close();
+  db = null;
+  owner = who;
+
+  // The .wasm file is served from public/ (copied there by scripts/copy-wasm.mjs).
+  const SQL = await initSqlJs({ locateFile: (file) => `/${file}` });
+  let saved: Uint8Array | null = null;
+  if (who.kind === "user") {
+    try {
+      saved = await downloadNotebook(who.id);
+      syncListener("saved");
+    } catch {
+      syncListener("offline");
     }
+  } else {
+    syncListener("local");
+  }
+  saved ??= await loadBytes(slotFor(who));
+
+  db = saved ? new SQL.Database(saved) : new SQL.Database();
+  run("PRAGMA foreign_keys = ON");
+  if (!saved) {
+    db.exec(schema);
+    if (who.kind === "guest") insertSnapshot(sampleSnapshot(today));
+    await persist();
   }
   return readSnapshot();
+}
+
+/**
+ * Closes the notebook on sign-out: waits for the last upload, then forgets
+ * this device's copy so the next person at this computer sees nothing.
+ */
+export async function closeDatabase(): Promise<void> {
+  if (owner.kind === "user") {
+    if (uploadTimer) {
+      clearTimeout(uploadTimer);
+      uploadTimer = null;
+      if (db) await uploadNotebook(owner.id, db.export()).catch(() => {});
+    }
+    await pendingUpload;
+    await deleteBytes(slotFor(owner));
+  }
+  db?.close();
+  db = null;
+  owner = { kind: "guest" };
 }
 
 // ---------------------------------------------------------------- reading
@@ -212,4 +288,68 @@ export async function resetDatabase(today: string, withSample: boolean): Promise
   if (withSample) insertSnapshot(sampleSnapshot(today));
   await persist();
   return readSnapshot();
+}
+
+// ------------------------------------------------- small facts and edits
+
+export function getMeta(key: string): string | null {
+  return rows<{ value: string }>("SELECT value FROM meta WHERE key = ?", [key])[0]?.value ?? null;
+}
+
+export async function setMeta(key: string, value: string): Promise<void> {
+  run("INSERT OR REPLACE INTO meta VALUES (?, ?)", [key, value]);
+  await persist();
+}
+
+/** Fixes an item after the fact: a better title, the right date. */
+export async function updateItem(id: string, patch: { title?: string; due?: string | null }): Promise<Snapshot> {
+  if (patch.title !== undefined) run("UPDATE items SET title = ? WHERE id = ?", [patch.title, id]);
+  if (patch.due !== undefined) run("UPDATE items SET due = ? WHERE id = ?", [patch.due, id]);
+  await persist();
+  return readSnapshot();
+}
+
+/** Removes an item; its people, history and links go with it (ON DELETE CASCADE). */
+export async function deleteItem(id: string): Promise<Snapshot> {
+  run("DELETE FROM items WHERE id = ?", [id]);
+  await persist();
+  return readSnapshot();
+}
+
+// ------------------------------------------------------------------ undo
+
+/**
+ * Undo is the simplest kind there is: before a change, keep a copy of the
+ * whole database (it's small - a few hundred KB); to undo, put the copy back.
+ */
+export const checkpoint = (): Uint8Array => db!.export();
+
+export async function restore(bytes: Uint8Array): Promise<Snapshot> {
+  const SQL = await initSqlJs({ locateFile: (file) => `/${file}` });
+  db?.close();
+  db = new SQL.Database(bytes);
+  run("PRAGMA foreign_keys = ON");
+  await persist();
+  return readSnapshot();
+}
+
+// ------------------------------------------------------------ embeddings
+
+/** Stored note vectors for one embedding model, by note id. */
+export function readEmbeddings(model: string): Map<string, Float32Array> {
+  const out = new Map<string, Float32Array>();
+  for (const r of rows<{ note_id: string; vector: Uint8Array }>("SELECT note_id, vector FROM note_embeddings WHERE model = ?", [model])) {
+    // Copy into a fresh buffer: the bytes SQLite hands back may not be 4-byte aligned.
+    out.set(r.note_id, new Float32Array(r.vector.slice().buffer));
+  }
+  return out;
+}
+
+export async function saveEmbeddings(model: string, vectors: Map<string, Float32Array>): Promise<void> {
+  transaction(() => {
+    for (const [noteId, v] of vectors) {
+      run("INSERT OR REPLACE INTO note_embeddings VALUES (?, ?, ?)", [noteId, model, new Uint8Array(v.buffer, v.byteOffset, v.byteLength).slice()]);
+    }
+  });
+  await persist();
 }

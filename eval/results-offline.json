@@ -1,0 +1,67 @@
+{
+  "scores": {
+    "engine": "Offline rules",
+    "found": "68%",
+    "precise": "65%",
+    "f1": "0.67",
+    "kind": "92%",
+    "date": "83%",
+    "status": "92%",
+    "links": "0%",
+    "noise": "ok"
+  },
+  "matched": [
+    {
+      "expected": "Book a dentist appointment with Dr. Haddad",
+      "got": "Book the dentist"
+    },
+    {
+      "expected": "Dentist with Dr. Haddad",
+      "got": "Dentist"
+    },
+    {
+      "expected": "Pay the CityPower bill ($86.40)",
+      "got": "Pay the Citypower bill ($86.40)"
+    },
+    {
+      "expected": "Leila books the restaurant",
+      "got": "I'll book the restaurant 🎂"
+    },
+    {
+      "expected": "Cancel or keep Streamly before the trial ends",
+      "got": "Cancel or keep Streamly before the trial ends"
+    },
+    {
+      "expected": "Send Sarah the moodboard link",
+      "got": "Send over the moodboard link in the meantime"
+    },
+    {
+      "expected": "Text Mr. Duarte that Friday works for the boiler",
+      "got": "Landlord (Mr. Duarte) says the boiler guy can come Thursday or Friday next week, I need…"
+    },
+    {
+      "expected": "Get the cake for Mum's birthday dinner",
+      "got": "Mum's birthday dinner is Sat the 24th"
+    },
+    {
+      "expected": "Send Sarah the proposal with 3 pricing tiers",
+      "got": "She wants a proposal with 3 pricing tiers by Friday"
+    },
+    {
+      "expected": "Email Brightside Gym to cancel the membership",
+      "got": "Cancel before Nov 1"
+    },
+    {
+      "expected": "Follow up with Priya if there's no reply",
+      "got": "Follow up Monday"
+    },
+    {
+      "expected": "Start the passport renewal",
+      "got": "Renew passport"
+    },
+    {
+      "expected": "Send Sarah and Marco the revised timeline (start Nov 9)",
+      "got": "I owe them a revised timeline by Friday"
+    }
+  ]
+}

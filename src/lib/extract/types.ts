@@ -47,6 +47,8 @@ export interface Proposal {
   items: ProposedItem[];
   updates: ProposedUpdate[];
   links: ProposedLink[];
-  /** Which extractor made it, for the review card: "Offline rules", "Claude Opus 5.5"… */
+  /** Which extractor made it, for the review card: "Offline rules", "gpt-oss-120b via Groq"… */
   engine: string;
+  /** Set when the AI couldn't help and the offline rules stepped in. */
+  notice?: string;
 }

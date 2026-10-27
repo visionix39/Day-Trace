@@ -7,12 +7,11 @@
  *
  * Giving the model your open items is what lets it say "this note finishes
  * that task" or "this is waiting on that proposal" instead of creating
- * duplicates. That's retrieval in its simplest form: we pick what's relevant
- * (here, every open item) and put it in front of the model.
+ * duplicates. Which items it sees is chosen in context.ts (the retrieval step).
  */
 
 import { weekday } from "../dates";
-import type { Note, Snapshot } from "../types";
+import type { ExtractRequest } from "./context";
 
 export const SYSTEM = `You are DayTrace's note reader. Someone pastes in a quick note, a message they received, or text copied from a screenshot. You find what they need to follow up on and connect it to what they're already tracking.
 
@@ -40,21 +39,15 @@ Threads and people:
 Titles are short and practical, like a line on a to-do list, and keep the specifics (names, amounts, what exactly).`;
 
 /** The per-note message: context first, then the note itself. */
-export function userMessage(note: Note, desk: Snapshot, today: string): string {
-  const open = desk.items
-    .filter((i) => i.status === "open")
-    .map((i) => ({ id: i.id, kind: i.kind, title: i.title, due: i.due, thread: i.thread, people: i.people }));
-  const people = desk.people.map((p) => ({ id: p.id, name: p.name, aliases: p.aliases, role: p.role }));
-  const threads = desk.threads.map((t) => ({ id: t.id, title: t.title }));
-  const written = note.captured_at.slice(0, 10);
-
+export function userMessage(req: ExtractRequest): string {
+  const written = req.note.captured_at.slice(0, 10);
   return [
-    `<today>${today} (${weekday(today, "long")})</today>`,
-    `<threads>${JSON.stringify(threads)}</threads>`,
-    `<known_people>${JSON.stringify(people)}</known_people>`,
-    `<open_items>${JSON.stringify(open)}</open_items>`,
-    `<note written="${note.captured_at}" weekday="${weekday(written, "long")}" source="${note.source}"${note.from ? ` from="${note.from}"` : ""}>`,
-    note.text,
+    `<today>${req.today} (${weekday(req.today, "long")})</today>`,
+    `<threads>${JSON.stringify(req.threads)}</threads>`,
+    `<known_people>${JSON.stringify(req.people)}</known_people>`,
+    `<open_items>${JSON.stringify(req.open_items)}</open_items>`,
+    `<note written="${req.note.captured_at}" weekday="${weekday(written, "long")}" source="${req.note.source}"${req.note.from ? ` from="${req.note.from}"` : ""}>`,
+    req.note.text,
     `</note>`,
   ].join("\n");
 }

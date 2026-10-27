@@ -1,5 +1,7 @@
 "use client";
 
+import { Pencil } from "lucide-react";
+import { useState } from "react";
 import type { Bucket } from "@/lib/dates";
 import { useDesk } from "@/lib/store";
 import type { Item } from "@/lib/types";
@@ -25,7 +27,7 @@ const verbs = {
 
 /**
  * The daily follow-up list, written on a ruled notebook page. Ticking an item
- * saves it to the database straight away.
+ * saves it straight away; the pencil lets you fix a title or date.
  */
 export function DailyList({ view }: { view: DeskView }) {
   const list = view.dailyList();
@@ -62,7 +64,9 @@ export function DailyList({ view }: { view: DeskView }) {
 }
 
 function Row({ item, view, onToggle }: { item: Item; view: DeskView; onToggle: () => void }) {
+  const [editing, setEditing] = useState(false);
   const thread = view.threadOf(item);
+  if (editing) return <EditRow item={item} hue={thread.hue} onClose={() => setEditing(false)} />;
   const done = item.status === "done";
   // Show the one connection that best explains *why* this matters.
   const link = view.linksFor(item.id)[0];
@@ -87,7 +91,17 @@ function Row({ item, view, onToggle }: { item: Item; view: DeskView; onToggle: (
       )}
 
       <div className="min-w-0 flex-1 pl-[9px]">
-        <p className={`text-[1.02rem] leading-8 ${done ? "struck" : ""}`}>{item.title}</p>
+        <div className="flex items-start gap-2">
+          <p className={`flex-1 text-[1.02rem] leading-8 ${done ? "struck" : ""}`}>{item.title}</p>
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            aria-label={`Edit “${item.title}”`}
+            className="mt-2 shrink-0 text-ink-3 opacity-60 transition-opacity group-hover:opacity-100 hover:text-thread focus-visible:opacity-100 sm:opacity-0"
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </button>
+        </div>
         <div className="-mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1">
           <span className="flex items-center gap-1.5 text-[0.75rem] font-semibold text-ink-3">
             <span className="h-2 w-2 rounded-full bg-[var(--h)]" />
@@ -105,6 +119,60 @@ function Row({ item, view, onToggle }: { item: Item; view: DeskView; onToggle: (
             ↳ {verbs[link.relation][link.from === item.id ? 0 : 1]} “{other.title}”
           </p>
         )}
+      </div>
+    </li>
+  );
+}
+
+/** Fix an item in place: title, due date, or remove it altogether. */
+function EditRow({ item, hue, onClose }: { item: Item; hue: string; onClose: () => void }) {
+  const editItem = useDesk((s) => s.editItem);
+  const removeItem = useDesk((s) => s.removeItem);
+  const [title, setTitle] = useState(item.title);
+  const [due, setDue] = useState(item.due ?? "");
+
+  const save = async () => {
+    if (!title.trim()) return;
+    await editItem(item.id, { title: title.trim(), due: due || null });
+    onClose();
+  };
+
+  return (
+    <li className={`hue-${hue} py-2 pr-4 pl-[62px] sm:pr-6`}>
+      <div className="rounded-md border-[1.5px] border-[var(--h)] bg-card px-3 py-2">
+        <input
+          autoFocus
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") void save();
+            if (e.key === "Escape") onClose();
+          }}
+          aria-label="Title"
+          className="w-full bg-transparent text-[1rem] outline-none"
+        />
+        <div className="mt-2 flex flex-wrap items-center gap-3">
+          <label className="flex items-center gap-1.5 text-[0.78rem] font-semibold text-ink-2">
+            due
+            <input type="date" value={due} onChange={(e) => setDue(e.target.value)} className="rounded border-[1.5px] border-rule bg-card-2 px-1.5 py-0.5 text-[0.8rem]" />
+          </label>
+          {due && (
+            <button type="button" onClick={() => setDue("")} className="text-[0.75rem] font-semibold text-ink-3 hover:text-ink">
+              no date
+            </button>
+          )}
+          <span className="ml-auto flex items-center gap-3">
+            <button type="button" onClick={() => void removeItem(item.id)} className="text-[0.78rem] font-semibold text-thread hover:underline">
+              remove
+            </button>
+            <button type="button" onClick={onClose} className="text-[0.78rem] font-semibold text-ink-2 hover:text-ink">
+              cancel
+            </button>
+            <button type="button" onClick={() => void save()} className="rounded-full bg-ink px-3 py-1 text-[0.78rem] font-semibold text-card">
+              save
+            </button>
+          </span>
+        </div>
       </div>
     </li>
   );
