@@ -15,7 +15,22 @@
 
 import { createClient, type SupabaseClient, type User } from "@supabase/supabase-js";
 
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+/**
+ * Just the https://….supabase.co part. Supabase's dashboard also shows
+ * addresses like https://….supabase.co/rest/v1/ - the client adds those
+ * paths itself, so a copied one would break every request.
+ */
+export function projectUrl(value: string | undefined): string | undefined {
+  const raw = value?.trim().replace(/^["']|["']$/g, "");
+  if (!raw) return undefined;
+  try {
+    return new URL(raw).origin;
+  } catch {
+    return raw; // not a URL at all; isWebAddress() reports it
+  }
+}
+
+const url = projectUrl(process.env.NEXT_PUBLIC_SUPABASE_URL);
 const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim();
 
 /** A real web address, like https://abcdefghijklmnopqrst.supabase.co. */

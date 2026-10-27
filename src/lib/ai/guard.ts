@@ -13,6 +13,7 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
+import { projectUrl } from "../auth/supabase";
 
 const WINDOW_MS = 10 * 60 * 1000;
 const calls = new Map<string, number[]>();
@@ -28,7 +29,7 @@ const verified = new Map<string, { id: string; until: number }>();
  */
 export async function identify(req: Request): Promise<{ key: string; signedIn: boolean }> {
   const token = req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const url = projectUrl(process.env.NEXT_PUBLIC_SUPABASE_URL);
   const anon = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
   if (token && url && anon) {
     const hit = verified.get(token);

@@ -87,6 +87,9 @@ function friendly(message: string): string {
   if (/already registered|already exists/i.test(message)) return "There's already an account with that email - try signing in.";
   if (/email not confirmed/i.test(message)) return "Please confirm your email first - check your inbox for the link.";
   if (/password/i.test(message) && /at least|short|weak/i.test(message)) return "That password is too short - use at least 8 characters.";
+  // Supabase's built-in email sender allows only 2 emails an hour per project.
+  if (/email rate limit/i.test(message))
+    return "We've hit the limit on confirmation emails for now (Supabase's free sender allows 2 an hour). Check your inbox for an earlier link, or try again later.";
   if (/rate limit|too many/i.test(message)) return "Too many tries - wait a minute and try again.";
   if (/failed to fetch|network|load failed/i.test(message)) return "Couldn't reach the sign-in service. Check your connection and try again.";
   return message;
